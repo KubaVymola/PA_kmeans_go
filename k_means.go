@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"io/ioutil"
+	"log"
 	"math"
 	"math/rand"
 	"os"
 	"strconv"
+	"time"
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -16,8 +19,12 @@ import (
 
 var iterationNum int = 0
 var colors []color.RGBA
+const doPlotting bool = false
+const doLogging bool = false
 
 func plotCurrentIteration(points, centroids []vec2d, pointOwnerIds []int) {
+    if !doPlotting { return }
+    
     p := plot.New()
 
     // groups := make([]plotter.XYs, len(centroids))
@@ -30,7 +37,7 @@ func plotCurrentIteration(points, centroids []vec2d, pointOwnerIds []int) {
             currentPoints = append(currentPoints, plotter.XY{X: points[j].x, Y: points[j].y})
         }
 
-        fmt.Println(currentPoints)
+        log.Println(currentPoints)
 
         s, _ := plotter.NewScatter(currentPoints)
         s.GlyphStyle.Color = colors[i]
@@ -48,8 +55,7 @@ func plotCurrentIteration(points, centroids []vec2d, pointOwnerIds []int) {
         p.Add(l)
     }
 
-
-    p.Save(7*vg.Inch, 7*vg.Inch, fmt.Sprint(iterationNum) + ".png")
+    p.Save(7*vg.Inch, 7*vg.Inch, "./output/" + fmt.Sprint(iterationNum) + ".png")
 }
 
 func calculateNewOwners(points, centroids [] vec2d, pointOwnerIds []int) bool {
@@ -104,17 +110,17 @@ func iteration(points, centroids []vec2d, pointOwnerIds []int) bool {
 
     // If ownership didn't change, end program
 
-    fmt.Println("=======================")
-    fmt.Println("Step: ", iterationNum)
+    log.Println("=======================")
+    log.Println("Step: ", iterationNum)
     
     change := calculateNewOwners(points, centroids, pointOwnerIds)
-    fmt.Println("New owners: ", pointOwnerIds)
+    log.Println("New owners: ", pointOwnerIds)
 
     calculateNewCentroids(points, centroids, pointOwnerIds)
-    fmt.Println("New centroids: ", centroids)
+    log.Println("New centroids: ", centroids)
 
-    fmt.Println("Step ", iterationNum, " done")
-    fmt.Println("=======================")
+    log.Println("Step ", iterationNum, " done")
+    log.Println("=======================")
 
     iterationNum++
 
@@ -136,6 +142,8 @@ func initPoints(points []vec2d) {
 }
 
 func main() {
+    if !doLogging { log.SetOutput(ioutil.Discard) }
+
     if len(os.Args) < 4 {
         fmt.Println("Usage: ./k_means -- <number of points> <number of centroids>")
     }
@@ -148,7 +156,12 @@ func main() {
         return
     }
 
+    // Checks done, proceeding with running the program
+
     rand.Seed(10100)
+
+    os.RemoveAll("./output/")
+    os.Mkdir("./output/", 0755)
 
     // Declarations
     points := make([]vec2d, arraySize)
@@ -166,13 +179,15 @@ func main() {
     // Status log
     fmt.Println("Number of points: ", arraySize)
     fmt.Println("Number of centroids: ", k)
-    fmt.Println("Points: ", points)
-    fmt.Println("Centroids: ", centroids)
-    fmt.Println("Owners: ", pointOwnerIds)
+    log.Println("Points: ", points)
+    log.Println("Centroids: ", centroids)
+    log.Println("Owners: ", pointOwnerIds)
 
     fmt.Println("Initialized")
 
     plotCurrentIteration(points, centroids, pointOwnerIds)
+
+    start := time.Now()
 
     // Main loop
     for {
@@ -181,7 +196,12 @@ func main() {
         if !change { break }
     }
 
+    elapsed := time.Since(start)
+
+    fmt.Println("Time: ", elapsed)
+
     // Exit log
     fmt.Println("Converged")
+    fmt.Println("Steps: ", iterationNum)
     fmt.Println("Centroids: ", centroids)
 }
