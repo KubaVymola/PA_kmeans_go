@@ -17,6 +17,8 @@ or
 
 - The program takes about 750 ms to converge for 10,000 points and k = 20. When running on 8-core CPU with the data race present, it can take as little as 250 ms to converge and I have not observed any misbehaviour of the program.
 
+- Example output gif is present in the ./output directory
+
 # Author
 
 Jakub Výmola (VYM0038), VŠB-FEI, 2021-2022
